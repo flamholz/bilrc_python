@@ -4,6 +4,17 @@ import numpy as np
 import struct
 
 def read_ns1_data(fname):
+    """
+    Read binary timecourse data from ns1 into memory.
+    
+    TODO: update to return an object that contains all the data.
+    
+    Args:
+        fname: the filename to read from.
+       
+    Returns:
+        A 2-tuple (T, Y) where T is the timepoints and Y are the values recorded.
+    """
     with open(fname, 'rb') as binfile:
         # '>' denotes big-endian byte format, which is what Jay uses
         header_tuple = struct.unpack('>iiffiiiii', binfile.read(9*4))
