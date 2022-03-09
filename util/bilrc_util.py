@@ -3,12 +3,64 @@
 import numpy as np
 import struct
 
+class NS1Data:
+    """Container for data read from a binary file from NS1."""
+    
+    def __init__(self, T, Y, EXP, TB, PTPS, VOLTS,
+                 LAM_EX, LAM_OB, SHOTS, DIM, PTS,
+                 exoff_av, bloff_av,
+                 comment, fname):
+        """Initialize.
+        
+        Args:
+            T: timepoints.
+            Y: raw timeseries data.
+            EXP: ?
+            TB: ?
+            PTPS: number of timepoints per second. 
+            VOLTS: ?
+            LAM_EX: excitation wavelength.
+            LAM_OB: emission wavelength.
+            SHOTS: number of shots accumulated in the file. 
+            DIM: ? 
+            PTS: total number of points.
+            exoff_av: ?
+            bloff_av: ?
+            comment: comment
+            fname: filename from which the data came.
+        """
+        self.T = T
+        self.Y = Y
+        self.EXP = EXP
+        self.TB = TB
+        self.PTPS = PTPS
+        self.VOLTS = VOLTS
+        self.LAM_EX = LAM_EX
+        self.LAM_OB = LAM_OB
+        self.SHOTS = SHOTS
+        self.DIM = DIM
+        self.PTS = PTS
+        self.comment = comment
+        self.fname = fname
+        
+        # Default resampling/averaging of the data to have logarithmically spaced timepoints
+        # with 100 points per decade. This provides additional averaging and is preferred for 
+        # fitting multi-exponential processes with very different timescales since the raw
+        # data (evenly-spaced timepoints) intrinsically overweights long-timescales.
+        self.t, self.y, self.wt = logtime_r2(T, Y, 100)
+    
+    def __str__(self):
+        fmt = '<NS1Data excitation={0}nm emission={1}nm shots={2} points={3} points_per_second={4} fname="{5}"">'
+        return fmt.format(self.LAM_EX, self.LAM_OB,
+                          self.SHOTS, self.PTS,
+                          self.PTPS, self.fname)
+    
+        
+
 def read_ns1_data(fname):
     """
     Read binary timecourse data from ns1 into memory.
-    
-    TODO: update to return an object that contains all the data.
-    
+        
     Args:
         fname: the filename to read from.
        
@@ -18,10 +70,11 @@ def read_ns1_data(fname):
     with open(fname, 'rb') as binfile:
         # '>' denotes big-endian byte format, which is what Jay uses
         header_tuple = struct.unpack('>iiffiiiii', binfile.read(9*4))
-        EXP, TB, PTPS, VOLTS, LAM_EX, LAB_OB, SHOTS, DIM, PTS = header_tuple
-        #print('EXP, TB, PTPS, VOLTS, LAM_EX, LAB_OB, SHOTS, DIM, PTS')
-        #print(header_tuple)
+        EXP, TB, PTPS, VOLTS, LAM_EX, LAM_OB, SHOTS, DIM, PTS = header_tuple
         
+        #for n,v in zip('EXP,TB,PTPS,VOLTS,LAM_EX,LAM_OB,SHOTS,DIM,PTS'.split(','), header_tuple):
+        #    print(n, '=', v)
+                
         DATA = np.zeros((2, PTS))
         pts_fmt = '>' + 'i'*PTS
         for j in range(2):
@@ -29,7 +82,12 @@ def read_ns1_data(fname):
         
         EXOFF, BLOFF = struct.unpack('>ii', binfile.read(2*4))
         
-        # TODO: read the comment here. It's ascii til the EOF
+        # Rest of the file is ASCII comment - 1 byte per char
+        # TODO: not sure this is right... double check on a file with a real comment.
+        bin_comment = binfile.read()
+        comment_len = len(bin_comment)
+        comment_format = '>{0:d}s'.format(comment_len)
+        comment = struct.unpack(comment_format, bin_comment)[0]
     
     DIG = 2
     if TB == 0 or TB == 2:
@@ -58,8 +116,12 @@ def read_ns1_data(fname):
             Y = -np.log10((VDATA[0,:] + EXOFF) / (VDATA[1,:] + BLOFF))
         else:
             Y = -np.log10((VDATA[0,:] + EXOFF) / (VDATA[1,:] + BLOFF))
-            
-    return T, Y
+    
+    # Subtract off the constant offset - i.e. blank the data
+    # NB: This assumes that the first 100 points are pre-shot data.
+    Y -= Y[:100].mean()
+    
+    return NS1Data(T, Y, *header_tuple, exoff_av, bloff_av, comment, fname)
 
 
 def logtime_r2(t, y, ppd):
