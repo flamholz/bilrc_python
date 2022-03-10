@@ -9,7 +9,7 @@ class NS1Data:
     def __init__(self, T, Y, EXP, TB, PTPS, VOLTS,
                  LAM_EX, LAM_OB, SHOTS, DIM, PTS,
                  exoff_av, bloff_av,
-                 comment, fname):
+                 comment=None, fname=None):
         """Initialize.
         
         Args:
@@ -31,6 +31,7 @@ class NS1Data:
         """
         self.T = T
         self.Y = Y
+        self.Ynorm = Y/Y.max()
         self.EXP = EXP
         self.TB = TB
         self.PTPS = PTPS
@@ -40,15 +41,29 @@ class NS1Data:
         self.SHOTS = SHOTS
         self.DIM = DIM
         self.PTS = PTS
+        self.bloff_av = bloff_av
+        self.exoff_av = exoff_av
         self.comment = comment
         self.fname = fname
+       
+    def log_time(self, ppd=100):
+        """Return a copy of self with logarithmically-spaced timepoints.
         
+        Args:
+            ppd: points per decile, see logtime_r2().
+        """
         # Default resampling/averaging of the data to have logarithmically spaced timepoints
         # with 100 points per decade. This provides additional averaging and is preferred for 
         # fitting multi-exponential processes with very different timescales since the raw
         # data (evenly-spaced timepoints) intrinsically overweights long-timescales.
-        self.t, self.y, self.wt = logtime_r2(T, Y, 100)
-    
+        resampled_t, resampled_y, _wts = logtime_r2(self.T, self.Y, 100)
+        
+        self_params = dict(vars(self))
+        self_params.pop('T')
+        self_params.pop('Y')
+        self_params.pop('Ynorm')
+        return NS1Data(resampled_t, resampled_y, **self_params)
+            
     def __str__(self):
         fmt = '<NS1Data excitation={0}nm emission={1}nm shots={2} points={3} points_per_second={4} fname="{5}"">'
         return fmt.format(self.LAM_EX, self.LAM_OB,
