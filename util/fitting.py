@@ -1,13 +1,15 @@
 import numpy as np
 from scipy.optimize import differential_evolution
 
-import matplotlib.pyplot as plt
 
-"""
+"""fitting.py: code for fitting single or multi-exponential models to lifetime spectroscopy data.
+
 Code snippet lightly modified from Richard Schwarzl's Github project:
 https://gitlabph.physik.fu-berlin.de/rschwarz/MultiExponentialFitting/
 Retrieved March 8th 2022
 """
+
+__author__      = "Avi I. Flamholz"
 
 
 def fit_multi_exponential(n, x, y):

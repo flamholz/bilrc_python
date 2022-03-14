@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+"""bilrc_util.py: utilities for parsing data from the Caltech BI Laser Resource Center.
+
+Translated from MATLAB scripts by Jay Winkler with help/input from Jay. 
+"""
+
+__author__      = "Avi I. Flamholz"
+
 import numpy as np
 import struct
 
@@ -10,23 +17,24 @@ class NS1Data:
                  LAM_EX, LAM_OB, SHOTS, DIM, PTS,
                  exoff_av, bloff_av,
                  comment=None, fname=None):
-        """Initialize.
+        """Initialize NS1Data object representing a single output file from
+        nanosecond1 at the Caltech BI Laser Resource Center.
         
         Args:
             T: timepoints.
             Y: raw timeseries data.
-            EXP: ?
-            TB: ?
+            EXP: Experiment Type. EXP=0, luminescence; EXP=2, transient absorption
+            TB: Time base - not used in parsing
             PTPS: number of timepoints per second. 
-            VOLTS: ?
+            VOLTS: Full scale voltage digitizer input range = +/- VOLTS
             LAM_EX: excitation wavelength.
-            LAM_OB: emission wavelength.
+            LAM_OB: observation wavelength.
             SHOTS: number of shots accumulated in the file. 
-            DIM: ? 
+            DIM: ?
             PTS: total number of points.
-            exoff_av: ?
-            bloff_av: ?
-            comment: comment
+            exoff_av: average EXOFF, see notes below. 
+            bloff_av: average BLOFF, see notes below. 
+            comment: comment in the file about the run.
             fname: filename from which the data came.
         """
         self.T = T
@@ -75,6 +83,25 @@ class NS1Data:
 def read_ns1_data(fname):
     """
     Read binary timecourse data from ns1 into memory.
+    
+    Notes from Jay Winkler about parameters used here: 
+    EXP: Experiment Type. EXP=0, luminescence; EXP=2, transient absorption
+    TB:  Time base - parameter is not used in parsing
+    PTPS: number of time points per second.
+    VOLTS: Full scale voltage digitizer input range = +/- VOLTS
+    LAM_EX: excitation wavelength.
+    LAM_OB: observation wavelength.
+    SHOTS: total number of laser shots.
+    DIM: Unused in the code.
+    PTS: Total number of data points.
+    EXOFF: In transient absorption, the PMT amplifier applies an offset voltage
+    to the signal, driving it to 0 V before the laser fires. That offset voltage
+    for excitation cycles is stored in EXOFF. To get true voltage, this value
+    is added back to the recorded data.
+    BLOFF: In transient absorption, the PMT amplifier applies an offset voltage
+    to the signal, driving it to 0 V before the laser fires. That offset voltage
+    for blank cycles is stored in BLOFF. To get true voltage, this value is added
+    back to the recorded data.
         
     Args:
         fname: the filename to read from.
