@@ -3,3 +3,5 @@ Python tools for interacting with data from the Caltech Laser Resource Center da
 
 Mostly translated from Matlab code by Jay Winkler. Fitting code lightly modified from Richard Schwarzl's Github project:
 https://gitlabph.physik.fu-berlin.de/rschwarz/MultiExponentialFitting/
+
+See utils/ for parsing and fitting code and iPython notebooks for example usage. 
