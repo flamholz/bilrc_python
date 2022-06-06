@@ -9,6 +9,7 @@ __author__      = "Avi I. Flamholz"
 
 import numpy as np
 import struct
+import pandas as pd
 
 class NS1Data:
     """Container for data read from a binary file from NS1."""
@@ -78,6 +79,10 @@ class NS1Data:
                           self.SHOTS, self.PTS,
                           self.PTPS, self.fname)
     
+    def to_series(self):
+        """Returns Y=X as a Pandas series"""
+        idx = pd.Index(data=self.T, name='time_s')
+        return pd.Series(data=self.Y, index=idx, name='intensity')
         
 
 def read_ns1_data(fname):
